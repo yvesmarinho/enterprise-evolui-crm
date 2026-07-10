@@ -1,0 +1,21 @@
+{
+  "recommendations": [
+    "EditorConfig.EditorConfig",
+    "bradlc.vscode-tailwindcss",
+    "christian-kohler.path-intellisense",
+    "dbaeumer.vscode-eslint",
+    "donjayamanne.githistory",
+    "eamodio.gitlens",
+    "esbenp.prettier-vscode",
+    "github.copilot",
+    "github.copilot-chat",
+    "mhutchie.git-graph",
+    "ms-vscode.js-debug",
+    "ms-vscode.live-server",
+    "ms-vscode.vscode-typescript-next",
+    "orta.vscode-jest",
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    "yzhang.markdown-all-in-one"
+  ]
+}

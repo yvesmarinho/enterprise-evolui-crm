@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 GitHub Discussions
+    url: https://github.com/enterprise-evolui-crm.git/discussions
+    about: Para discussões gerais, ideias e perguntas abertas
+  - name: 📖 Documentação
+    url: https://github.com/enterprise-evolui-crm.git#readme
+    about: Consulte nossa documentação completa
+  - name: 🔒 Relatar Vulnerabilidade de Segurança
+    url: https://github.com/enterprise-evolui-crm.git/security/advisories/new
+    about: PRIVADO - Para reportar vulnerabilidades de segurança
