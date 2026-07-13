@@ -199,8 +199,11 @@ services:
   # controle em public._migrations). Aplica supabase/migrations/*.sql
   # e faz backfill de profiles/contas. App e admin-bootstrap só sobem
   # depois deste serviço concluir com sucesso.
-  # MIGRATIONS_DIR no .env aponta para a pasta de migrations no host
-  # (padrão: ../supabase/migrations, para checkout completo do repo).
+  # MIGRATIONS_DIR no .env aponta para a pasta de migrations no host.
+  # Padrão: ./migrations — symlink versionado para ../supabase/migrations.
+  # Num checkout completo o symlink resolve; ao enviar só a pasta
+  # deploy/ ao servidor, use rsync -aL (materializa o symlink em
+  # arquivos reais) ou copie supabase/migrations e ajuste o caminho.
   # ------------------------------------------------------------------
   db-migrations:
     image: supabase/postgres:15.8.1.049
@@ -213,7 +216,7 @@ services:
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ${MIGRATIONS_DIR:-../supabase/migrations}:/migrations:ro
+      - ${MIGRATIONS_DIR:-./migrations}:/migrations:ro
       - ./scripts/migrate-db.sh:/usr/local/bin/migrate-db.sh:ro
     entrypoint: ["/bin/bash", "/usr/local/bin/migrate-db.sh"]
     networks:
