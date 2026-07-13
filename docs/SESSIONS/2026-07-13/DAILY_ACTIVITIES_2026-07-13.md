@@ -1,5 +1,5 @@
 <!-- Criado em: 13/07/2026 11:17 -->
-<!-- Modificado em: 13/07/2026 11:17 -->
+<!-- Modificado em: 13/07/2026 11:50 -->
 
 # Atividades — 13/07/2026
 
@@ -15,4 +15,17 @@
 - **Decisões**: bootstrap como serviço one-shot no compose (escolha do usuário) em vez de etapa no entrypoint do app; signup desabilitado por padrão; e-mail apenas via GoTrue (nenhum mailer no app Next.js).
 - **Arquivos modificados**: `deploy/docker-compose.yml`, `deploy/env.example`, `deploy/Dockerfile`, `deploy/docker-entrypoint.sh`, `deploy/scripts/bootstrap-admin.sh` (novo), `src/middleware.ts`, `src/app/(auth)/login/page.tsx`, `src/lib/auth/signup-flag.ts` (novo), `.env.local.example`.
 - **Verificação**: `docker compose --env-file env.example config` OK; `sh -n` nos scripts OK; `npm run lint` sem erros novos (26 pré-existentes na main); `tsc --noEmit` limpo.
-- **Commits**: branch `359-admin-bootstrap-smtp-signup-flag` (PR a abrir).
+- **Commits**: branch `359-admin-bootstrap-smtp-signup-flag` — PR https://github.com/yvesmarinho/enterprise-evolui-crm/pull/1.
+
+## Teste local do stack de deploy
+
+- **Horário/Status**: 11:30–11:50 — concluído.
+- **Objetivo**: validar em máquina local o stack do deploy (Postgres + GoTrue + admin-bootstrap + storage) com segredos descartáveis.
+- **Passos/Resultado** (projeto compose isolado `evolui-test`, dados em scratchpad, tudo removido ao final):
+  - `admin-bootstrap` criou o admin no 1º boot (HTTP 200) e foi idempotente na reexecução (HTTP 422 "já existe").
+  - Signup público recusado pelo GoTrue: `{"error_code":"signup_disabled"}` — `DISABLE_SIGNUP=true` funcionando.
+  - Variáveis `GOTRUE_SMTP_*` corretamente injetadas no container do GoTrue a partir de `SMTP_*`.
+  - 35 migrations aplicadas (37 tabelas); trigger `handle_new_user` criou profile + conta `owner` para usuário novo criado pelo bootstrap; login via password grant HTTP 200.
+- **Bug encontrado e corrigido**: `deploy/scripts/apply-migrations.sh` falhava com "no password supplied" — o init `zz-align-role-passwords.sh` define senha para `supabase_admin` e o socket local do container exige autenticação. Fix: o script agora injeta `PGPASSWORD` (do ambiente ou de `deploy/.env`) no `docker compose exec`.
+- **Observação operacional**: aplicar as migrations **antes** de definir `ADMIN_EMAIL` (ou recriar o admin depois) para que o trigger crie profile/conta; a migration 008 exige o serviço `supabase-storage` já iniciado (ele migra o schema `storage`).
+- **Arquivos modificados**: `deploy/scripts/apply-migrations.sh`.
