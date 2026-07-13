@@ -86,9 +86,10 @@ services:
     volumes:
       - ${DATA_DIR:-/opt/docker_user/enterprise-evolui-crm}/supabase-db-data:/var/lib/postgresql/data
       - ${DATA_DIR:-/opt/docker_user/enterprise-evolui-crm}/supabase-db-backups:/backups
-      # Roda só no PRIMEIRO boot (data dir vazio): alinha as senhas dos
-      # roles internos (supabase_auth_admin etc.) com POSTGRES_PASSWORD.
+      # Rodam só no PRIMEIRO boot (data dir vazio): alinham as senhas dos
+      # roles internos com POSTGRES_PASSWORD e criam o schema _realtime.
       - ./supabase/init/zz-align-role-passwords.sh:/docker-entrypoint-initdb.d/zz-align-role-passwords.sh:ro
+      - ./supabase/init/zz-realtime-schema.sh:/docker-entrypoint-initdb.d/zz-realtime-schema.sh:ro
     networks:
       - db-network
     healthcheck:
