@@ -1,5 +1,5 @@
 <!-- Criado em: 13/07/2026 11:17 -->
-<!-- Modificado em: 13/07/2026 11:50 -->
+<!-- Modificado em: 13/07/2026 11:58 -->
 
 # Atividades — 13/07/2026
 
@@ -29,3 +29,15 @@
 - **Bug encontrado e corrigido**: `deploy/scripts/apply-migrations.sh` falhava com "no password supplied" — o init `zz-align-role-passwords.sh` define senha para `supabase_admin` e o socket local do container exige autenticação. Fix: o script agora injeta `PGPASSWORD` (do ambiente ou de `deploy/.env`) no `docker compose exec`.
 - **Observação operacional**: aplicar as migrations **antes** de definir `ADMIN_EMAIL` (ou recriar o admin depois) para que o trigger crie profile/conta; a migration 008 exige o serviço `supabase-storage` já iniciado (ele migra o schema `storage`).
 - **Arquivos modificados**: `deploy/scripts/apply-migrations.sh`.
+
+## Build da imagem e correção da flag de signup (runtime)
+
+- **Horário/Status**: 11:50–11:58 — concluído (push ao Docker Hub pendente de autorização).
+- **Contexto**: no build de teste da imagem 0.0.3 descobriu-se que a abordagem placeholder+sed para `NEXT_PUBLIC_SIGNUP_ENABLED` não funciona: o Next inlina a variável no build e o minificador dobra `"PLACEHOLDER" === "true"` para `false`, eliminando o placeholder do bundle — a flag ficava travada em "desabilitado".
+- **Correção** (conforme doc local do Next, environment-variables.md — "dynamic lookups will not be inlined"):
+  - `src/lib/auth/signup-flag.ts` usa lookup dinâmico (`const env = process.env`) — avaliado em runtime no servidor.
+  - `/login` virou server component fino (`page.tsx`, `force-dynamic`) que injeta `signupEnabled` por prop no novo `login-client.tsx`.
+  - Placeholder de signup removido do `deploy/Dockerfile` e do `docker-entrypoint.sh` (que só normaliza a env agora).
+  - Bug adicional: `build-push.sh` publicava `enterprise-evoli-crm` (typo) enquanto o compose consome `enterprise-evolui-crm` — nomes unificados.
+- **Validação na imagem 0.0.3 (local)**: flag `false` → `/signup` 307 para `/login` e link ausente; flag `true` → `/signup` 200 e link presente. `tsc --noEmit` limpo; lint sem erros novos.
+- **Arquivos modificados**: `src/lib/auth/signup-flag.ts`, `src/middleware.ts`, `src/app/(auth)/login/page.tsx` (novo), `src/app/(auth)/login/login-client.tsx` (renomeado), `deploy/Dockerfile`, `deploy/docker-entrypoint.sh`, `deploy/scripts/build-push.sh`.

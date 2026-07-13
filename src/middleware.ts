@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { isSignupEnabled } from '@/lib/auth/signup-flag'
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -75,7 +77,7 @@ export async function middleware(request: NextRequest) {
   if (
     !user &&
     request.nextUrl.pathname === '/signup' &&
-    process.env.NEXT_PUBLIC_SIGNUP_ENABLED !== 'true' &&
+    !isSignupEnabled() &&
     !request.nextUrl.searchParams.get('invite')
   ) {
     const url = request.nextUrl.clone()
