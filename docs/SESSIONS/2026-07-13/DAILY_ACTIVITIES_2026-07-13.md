@@ -1,5 +1,5 @@
 <!-- Criado em: 13/07/2026 11:17 -->
-<!-- Modificado em: 13/07/2026 15:51 -->
+<!-- Modificado em: 13/07/2026 16:20 -->
 
 # Atividades — 13/07/2026
 
@@ -51,3 +51,12 @@
   1. Admin criado ANTES das migrations (ordem do primeiro `up`) fica sem profile/conta → backfill idempotente adicionado ao `apply-migrations.sh` (cria conta + profile `owner` para usuários de `auth.users` sem profile). Validado reproduzindo o cenário: admin terminou `owner`.
   2. A tela de perfil exibia a coluna legada `profiles.role` (default `'user'`) em vez do papel real → agora exibe `account_role` com fallback.
 - **Arquivos modificados**: `deploy/supabase/init/zz-realtime-schema.sh` (novo), `deploy/docker-compose.yml`, `deploy/scripts/apply-migrations.sh`, `src/components/settings/profile-form.tsx`.
+
+## Migrations automatizadas no boot do stack (db-migrations)
+
+- **Horário/Status**: 16:00–16:20 — concluído.
+- **Contexto**: novo deploy no wfdb01 com banco zerado logava `relation "public.profiles" does not exist` etc. — o app subiu sem as migrations do CRM, pois `apply-migrations.sh` era passo manual sem garantia de ordem.
+- **Solução**: serviço one-shot `db-migrations` no compose (imagem supabase/postgres) roda `deploy/scripts/migrate-db.sh` a cada `up`: espera o Postgres e as migrations internas do storage-api, aplica `supabase/migrations/*.sql` (controle em `public._migrations`, mesmo do script manual) e faz o backfill de profiles/contas. `app` e `admin-bootstrap` agora dependem de `service_completed_successfully` — ordem garantida: db → storage → migrations → bootstrap/app.
+- **Config**: `MIGRATIONS_DIR` no `.env` (padrão `../supabase/migrations`); se o servidor recebe só `deploy/`, enviar também as migrations e apontar o caminho.
+- **Validação local (banco zerado, um único `up`)**: 35 migrations aplicadas, 37 tabelas, admin criado depois do trigger → `account_role = owner` direto (backfill 0). Segundo `up`: 0 aplicadas/35 puladas, bootstrap HTTP 422 — idempotente.
+- **Arquivos modificados**: `deploy/scripts/migrate-db.sh` (novo), `deploy/docker-compose.yml`, `deploy/env.example`.

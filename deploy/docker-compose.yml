@@ -1,5 +1,5 @@
 # Criado em: 10/07/2026 00:40
-# Modificado em: 13/07/2026 11:17
+# Modificado em: 13/07/2026 16:05
 #
 # Stack de produção do enterprise-evolui-crm:
 #   app (Next.js) + Supabase self-hosted + Evolution API.
@@ -48,6 +48,8 @@ services:
     depends_on:
       supabase-kong:
         condition: service_started
+      db-migrations:
+        condition: service_completed_successfully
     environment:
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
@@ -193,9 +195,35 @@ services:
       - db-network
 
   # ------------------------------------------------------------------
+  # Migrations do CRM (one-shot; roda a cada `up` e é idempotente —
+  # controle em public._migrations). Aplica supabase/migrations/*.sql
+  # e faz backfill de profiles/contas. App e admin-bootstrap só sobem
+  # depois deste serviço concluir com sucesso.
+  # MIGRATIONS_DIR no .env aponta para a pasta de migrations no host
+  # (padrão: ../supabase/migrations, para checkout completo do repo).
+  # ------------------------------------------------------------------
+  db-migrations:
+    image: supabase/postgres:15.8.1.049
+    restart: "no"
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+      supabase-storage:
+        condition: service_started
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ${MIGRATIONS_DIR:-../supabase/migrations}:/migrations:ro
+      - ./scripts/migrate-db.sh:/usr/local/bin/migrate-db.sh:ro
+    entrypoint: ["/bin/bash", "/usr/local/bin/migrate-db.sh"]
+    networks:
+      - db-network
+
+  # ------------------------------------------------------------------
   # Bootstrap do usuário admin padrão (one-shot; roda a cada `up` e é
   # idempotente — se ADMIN_EMAIL/ADMIN_PASSWORD não estiverem no .env,
-  # apenas loga que está desativado e sai).
+  # apenas loga que está desativado e sai). Depende das migrations
+  # para o trigger handle_new_user criar profile/conta do admin.
   # ------------------------------------------------------------------
   admin-bootstrap:
     image: curlimages/curl:8.12.1
@@ -205,6 +233,8 @@ services:
         condition: service_healthy
       supabase-auth:
         condition: service_started
+      db-migrations:
+        condition: service_completed_successfully
     environment:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
