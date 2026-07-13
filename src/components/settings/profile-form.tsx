@@ -313,7 +313,9 @@ export function ProfileForm() {
               <div>
                 <dt className="text-muted-foreground">{t('role')}</dt>
                 <dd className="mt-0.5 font-mono text-foreground">
-                  {profile?.role ?? 'user'}
+                  {/* Papel real no CRM (owner/admin/agent/viewer); a
+                      coluna legada profiles.role é só fallback. */}
+                  {profile?.account_role ?? profile?.role ?? 'user'}
                 </dd>
               </div>
               <div>

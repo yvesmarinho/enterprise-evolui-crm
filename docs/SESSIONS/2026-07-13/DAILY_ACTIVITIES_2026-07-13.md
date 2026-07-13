@@ -1,5 +1,5 @@
 <!-- Criado em: 13/07/2026 11:17 -->
-<!-- Modificado em: 13/07/2026 11:58 -->
+<!-- Modificado em: 13/07/2026 15:51 -->
 
 # Atividades — 13/07/2026
 
@@ -41,3 +41,13 @@
   - Bug adicional: `build-push.sh` publicava `enterprise-evoli-crm` (typo) enquanto o compose consome `enterprise-evolui-crm` — nomes unificados.
 - **Validação na imagem 0.0.3 (local)**: flag `false` → `/signup` 307 para `/login` e link ausente; flag `true` → `/signup` 200 e link presente. `tsc --noEmit` limpo; lint sem erros novos.
 - **Arquivos modificados**: `src/lib/auth/signup-flag.ts`, `src/middleware.ts`, `src/app/(auth)/login/page.tsx` (novo), `src/app/(auth)/login/login-client.tsx` (renomeado), `deploy/Dockerfile`, `deploy/docker-entrypoint.sh`, `deploy/scripts/build-push.sh`.
+
+## Fix crash-loop do Realtime + revisão do papel do admin
+
+- **Horário/Status**: 15:20–15:51 — concluído.
+- **Contexto**: no deploy do wfdb01 o supabase-db logava em loop `no schema has been selected to create in` e o admin aparecia como usuário comum.
+- **Fix 1 — schema _realtime**: o supabase-realtime conecta com `SET search_path TO _realtime`, schema que o compose oficial cria via `realtime.sql` e o nosso não criava. Novo init `deploy/supabase/init/zz-realtime-schema.sh` (primeiro boot) cria `_realtime` e `realtime`. Validado local: zero erros.
+- **Revisão do papel do admin**: não existe papel global no CRM — papéis são por conta (`owner` > `admin` > `agent` > `viewer`); o bootstrap já produz `owner` (máximo). Dois problemas reais encontrados:
+  1. Admin criado ANTES das migrations (ordem do primeiro `up`) fica sem profile/conta → backfill idempotente adicionado ao `apply-migrations.sh` (cria conta + profile `owner` para usuários de `auth.users` sem profile). Validado reproduzindo o cenário: admin terminou `owner`.
+  2. A tela de perfil exibia a coluna legada `profiles.role` (default `'user'`) em vez do papel real → agora exibe `account_role` com fallback.
+- **Arquivos modificados**: `deploy/supabase/init/zz-realtime-schema.sh` (novo), `deploy/docker-compose.yml`, `deploy/scripts/apply-migrations.sh`, `src/components/settings/profile-form.tsx`.
