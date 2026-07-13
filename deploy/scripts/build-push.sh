@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Criado em: 10/07/2026 01:10
-# Modificado em: 10/07/2026 01:30
+# Modificado em: 13/07/2026 12:05
 #
 # Builda e publica a imagem do app no Docker Hub.
-#   Imagem: adminvyadigital/enterprise-evolution-crm
+#   Imagem: adminvyadigital/enterprise-evolui-crm (mesmo nome que o
+#           docker-compose.yml consome — não alterar só de um lado)
 #   Tags..: <versão> e latest
 #
 # A imagem é GENÉRICA — nenhum valor do .env entra no build. Toda a
@@ -17,8 +18,8 @@
 set -euo pipefail
 
 REGISTRY_USER="adminvyadigital"
-IMAGE_NAME="enterprise-evoli-crm"
-VERSION="${1:-0.0.2}"
+IMAGE_NAME="enterprise-evolui-crm"
+VERSION="${1:-0.0.3}"
 IMAGE="${REGISTRY_USER}/${IMAGE_NAME}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

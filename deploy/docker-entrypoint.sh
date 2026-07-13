@@ -1,6 +1,6 @@
 #!/bin/sh
 # Criado em: 10/07/2026 01:30
-# Modificado em: 10/07/2026 01:30
+# Modificado em: 13/07/2026 11:17
 #
 # Entrypoint do container do app. A imagem é buildada com PLACEHOLDERS
 # nas variáveis NEXT_PUBLIC_* (que o Next.js embute no bundle). Aqui,
@@ -19,6 +19,15 @@ PLACEHOLDER_ANON="NEXT_PUBLIC_SUPABASE_ANON_KEY_PLACEHOLDER"
 PLACEHOLDER_SITE="https://site-placeholder.invalid"
 
 RUNTIME_WSS="$(echo "${NEXT_PUBLIC_SUPABASE_URL}" | sed 's|^https:|wss:|; s|^http:|ws:|')"
+
+# Flag de signup público: lida em RUNTIME pelo servidor (middleware e
+# página de login usam lookup dinâmico — não é inlinada no build, então
+# não precisa de placeholder/sed). Só normaliza para "true"/"false".
+if [ "${NEXT_PUBLIC_SIGNUP_ENABLED:-false}" = "true" ]; then
+  export NEXT_PUBLIC_SIGNUP_ENABLED="true"
+else
+  export NEXT_PUBLIC_SIGNUP_ENABLED="false"
+fi
 
 echo "[entrypoint] injetando configuração de runtime no bundle..."
 # Substitui em todos os arquivos de texto do build (JS, JSON, manifests).

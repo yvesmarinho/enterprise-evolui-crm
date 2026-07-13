@@ -1,5 +1,5 @@
 # Criado em: 10/07/2026 00:40
-# Modificado em: 10/07/2026 01:30
+# Modificado em: 13/07/2026 11:17
 #
 # Build multi-stage do enterprise-evolui-crm (Next.js 16, output standalone).
 # Contexto de build = raiz do repositório:

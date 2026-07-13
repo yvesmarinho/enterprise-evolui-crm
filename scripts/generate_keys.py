@@ -11,7 +11,7 @@ HOST..: local
 LOCAL.: scripts/
 OBS...: Gera JWT_SECRET, POSTGRES_PASSWORD, ENCRYPTION_KEY,
         REALTIME_SECRET_KEY_BASE, AUTOMATION_CRON_SECRET,
-        EVOLUTION_API_KEY e os JWTs anon/service_role do Supabase
+        EVOLUI_API_KEY e os JWTs anon/service_role do Supabase
         self-hosted (HS256, derivados do JWT_SECRET). MESCLA com o
         .secrets/.env existente: preserva todas as linhas/variáveis
         atuais e só acrescenta as chaves que faltam. Use --rotate para
@@ -149,7 +149,7 @@ def gerar_chaves() -> dict | bool:
             "REALTIME_SECRET_KEY_BASE": token_hex(32),
             "ENCRYPTION_KEY": token_hex(32),
             "AUTOMATION_CRON_SECRET": token_hex(32),
-            "EVOLUTION_API_KEY": token_hex(32),
+            "EVOLUI_API_KEY": token_hex(32),
         }
         logging.info("=== Termino Função: %s ===", sys._getframe().f_code.co_name)
         return chaves

@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { isSignupEnabled } from '@/lib/auth/signup-flag'
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -66,6 +68,21 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/dashboard'
       url.search = ''
     }
+    return withRefreshedCookies(NextResponse.redirect(url))
+  }
+
+  // Signup público desabilitado (NEXT_PUBLIC_SIGNUP_ENABLED !== 'true'):
+  // /signup redireciona para /login. Exceção: com token de convite na
+  // query o fluxo /join continua usando a página de signup.
+  if (
+    !user &&
+    request.nextUrl.pathname === '/signup' &&
+    !isSignupEnabled() &&
+    !request.nextUrl.searchParams.get('invite')
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.search = ''
     return withRefreshedCookies(NextResponse.redirect(url))
   }
 
