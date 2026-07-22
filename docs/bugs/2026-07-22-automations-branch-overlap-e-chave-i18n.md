@@ -158,6 +158,32 @@ cada nível da árvore a herdar a largura real de seu container em vez
 de depender do comportamento implícito de dimensionamento em
 cross-axis de flexbox com `items-center`.
 
+## Atualização (22/07/2026, 2ª rodada) — overlap ainda persistia
+
+Usuário confirmou que o overlap **continuava mesmo após deploy** do
+fix de `w-full min-w-0`. Sem acesso a inspeção de DOM ao vivo (sem
+ferramenta de browser disponível), não foi possível confirmar com
+certeza qual constrangimento de largura na árvore ainda estava sendo
+ignorado pelo motor de layout do navegador em produção.
+
+**Correção defensiva aplicada**: em vez de continuar caçando o ponto
+exato de vazamento de largura, adicionado `overflow-hidden` em
+`BranchColumn` (mesmo arquivo) e `w-full` explícito também no grid
+de `ConditionBranches` (`mt-3 grid w-full grid-cols-1 gap-3
+sm:grid-cols-2`). Isso garante que, **independentemente** de qualquer
+cálculo de largura que ainda escape do esperado, nenhum conteúdo pode
+visualmente invadir a coluna do branch vizinho — o pior caso passa a
+ser conteúdo cortado (clipping) dentro da própria coluna, nunca mais
+sobreposição visual sobre o branch ao lado. O menu "Add step" (portal)
+não é afetado pelo `overflow-hidden`, pois é renderizado via Portal
+(`base-ui` `Menu.Portal`), fora da árvore DOM do `BranchColumn`.
+
+**Status**: aguardando confirmação do usuário após novo
+build/deploy. Se o overlap ainda assim persistir, o próximo passo é
+inspecionar o DOM ao vivo (largura computada de cada nível da árvore
+via DevTools) para localizar com precisão o container que ainda não
+está respeitando a largura da coluna.
+
 ## Prevenção
 
 - Auditar o restante do arquivo por outros usos de

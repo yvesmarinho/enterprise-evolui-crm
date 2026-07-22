@@ -1204,7 +1204,7 @@ function ConditionBranches({
     // Stack Yes/No vertically on mobile — two columns at 375px would
     // cram each branch to ~170px which is too narrow for the nested
     // cards. Two-column grid returns on sm+.
-    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="mt-3 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
       <BranchColumn label={t("branches.yes")} color="text-primary">
         <StepList {...props} steps={yes} parentPath={yesPath} />
       </BranchColumn>
@@ -1225,7 +1225,7 @@ function BranchColumn({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex w-full min-w-0 flex-col items-center">
+    <div className="flex w-full min-w-0 flex-col items-center overflow-hidden">
       <div className={cn("mb-2 text-[11px] font-semibold uppercase", color)}>{label}</div>
       {children}
     </div>
