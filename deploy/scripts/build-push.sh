@@ -19,7 +19,7 @@ set -euo pipefail
 
 REGISTRY_USER="adminvyadigital"
 IMAGE_NAME="enterprise-evolui-crm"
-VERSION="${1:-0.0.3}"
+VERSION="${1:-0.0.4}"
 IMAGE="${REGISTRY_USER}/${IMAGE_NAME}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

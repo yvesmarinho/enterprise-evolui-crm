@@ -5,7 +5,7 @@ NOME..: create_admin_user.py
 LANG..: Python3
 TITULO: Cria usuário pré-definido via Admin API do GoTrue (Supabase)
 DATA..: 10/07/2026 12:00
-MODIFICADO: 10/07/2026 12:00
+MODIFICADO: 21/07/2026 09:32
 VERSÃO: 0.1.0
 HOST..: local / diversos
 LOCAL.: scripts/
@@ -37,6 +37,7 @@ import requests
 
 RAIZ = Path(__file__).resolve().parent.parent
 SECRETS_DIR = RAIZ / ".secrets"
+PAPEIS_VALIDOS = ("owner", "admin", "agent", "viewer")
 
 
 def config_logging() -> bool:
@@ -120,10 +121,12 @@ def carregar_conta(caminho: Path) -> dict | bool:
 
     Aceita ``full_name`` ou, na falta dele, mapeia ``username`` para o
     nome de exibição (usado pelo trigger handle_new_user do banco).
+    Aceita ``role`` (account_role_enum: owner/admin/agent/viewer);
+    na ausência, assume ``owner`` (papel padrão atribuído pelo trigger).
 
     :param caminho: Caminho do JSON (ex.: .secrets/create_account.json).
     :type caminho: Path
-    :return: Dict com email, password e full_name, ou False em erro.
+    :return: Dict com email, password, full_name e role, ou False em erro.
     :rtype: dict | bool
     """
     logging.info("=== Função: %s ===", sys._getframe().f_code.co_name)
@@ -138,6 +141,7 @@ def carregar_conta(caminho: Path) -> dict | bool:
         email = dados.get("email", "")
         password = dados.get("password", "")
         full_name = dados.get("full_name") or dados.get("username") or ""
+        role = dados.get("role", "owner")
         if not email or "@" not in email:
             logging.error("Campo 'email' ausente ou inválido no JSON")
             return False
@@ -146,12 +150,17 @@ def carregar_conta(caminho: Path) -> dict | bool:
             return False
         if not full_name:
             logging.warning("Sem 'full_name'/'username' — perfil ficará sem nome")
+        if role not in PAPEIS_VALIDOS:
+            logging.error(
+                "Campo 'role' inválido: %s (válidos: %s)", role, PAPEIS_VALIDOS
+            )
+            return False
         logging.info(
-            "Conta carregada: email=%s, password=%s, full_name=%s",
-            email, _mask(password), full_name,
+            "Conta carregada: email=%s, password=%s, full_name=%s, role=%s",
+            email, _mask(password), full_name, role,
         )
         logging.info("=== Termino Função: %s ===", sys._getframe().f_code.co_name)
-        return {"email": email, "password": password, "full_name": full_name}
+        return {"email": email, "password": password, "full_name": full_name, "role": role}
     except BaseException as errorMsg:
         logging.error("Erro ao carregar o JSON de conta")
         logging.error("Exception occurred", exc_info=True)
@@ -209,6 +218,65 @@ def criar_usuario(send_data: dict) -> dict | bool:
         return False
 
 
+def aplicar_role(send_data: dict, user_id: str, role: str) -> bool:
+    """
+    Aplica o papel (``account_role_enum``) no profile do usuário recém-criado.
+
+    O trigger ``handle_new_user`` sempre cria o profile com ``account_role
+    = 'owner'``; esta função faz um PATCH em ``profiles`` (via PostgREST,
+    com a service role key) para ajustar o papel conforme o JSON de conta.
+
+    :param send_data: Dict com supabase_url e service_role_key.
+    :type send_data: dict
+    :param user_id: UUID do usuário criado (auth.users.id).
+    :type user_id: str
+    :param role: Papel desejado (owner/admin/agent/viewer).
+    :type role: str
+    :return: True em sucesso, False em erro.
+    :rtype: bool
+    """
+    logging.info("=== Função: %s ===", sys._getframe().f_code.co_name)
+    if not send_data or not isinstance(send_data, dict):
+        logging.error("Parâmetro 'send_data' inválido")
+        return False
+    if not user_id or not isinstance(user_id, str):
+        logging.error("Parâmetro 'user_id' inválido")
+        return False
+    if role not in PAPEIS_VALIDOS:
+        logging.error("Parâmetro 'role' inválido: %s", role)
+        return False
+    if role == "owner":
+        logging.info("Role 'owner' já é o padrão atribuído pelo trigger — nada a fazer")
+        return True
+    try:
+        endpoint = f"{send_data['supabase_url'].rstrip('/')}/rest/v1/profiles"
+        headers = {
+            "Authorization": f"Bearer {send_data['service_role_key']}",
+            "apikey": send_data["service_role_key"],
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal",
+        }
+        resposta = requests.patch(
+            endpoint,
+            headers=headers,
+            params={"user_id": f"eq.{user_id}"},
+            json={"account_role": role},
+            timeout=30,
+        )
+        if resposta.status_code in (200, 204):
+            logging.info("Role aplicado: user_id=%s, role=%s", user_id, role)
+            logging.info("=== Termino Função: %s ===", sys._getframe().f_code.co_name)
+            return True
+        logging.error("Falha ao aplicar role: HTTP %d", resposta.status_code)
+        logging.error("Resposta: %s", resposta.text[:500])
+        return False
+    except BaseException as errorMsg:
+        logging.error("Erro ao aplicar role via PostgREST")
+        logging.error("Exception occurred", exc_info=True)
+        logging.error(errorMsg)
+        return False
+
+
 def main() -> int:
     """
     Ponto de entrada: carrega segredos e cria o usuário.
@@ -248,6 +316,14 @@ def main() -> int:
     resultado = criar_usuario(send_data)
     if not resultado:
         return 1
+    user_id = resultado.get("id")
+    if user_id:
+        if not aplicar_role(send_data, user_id, conta["role"]):
+            return 1
+    else:
+        logging.warning(
+            "Usuário já existia — role não foi reaplicado (informe o id manualmente se necessário)"
+        )
     logging.info("Concluído com sucesso.")
     logging.info("=== Termino programa: %s ===", Path(sys.argv[0]).name)
     return 0
