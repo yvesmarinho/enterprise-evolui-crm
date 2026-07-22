@@ -137,6 +137,27 @@ reproduzido em print mas com a mesma causa.
 Validado com `pnpm typecheck` (sem erros) e `python3 -m json.tool` no
 `messages/en.json` (JSON válido).
 
+## Atualização (22/07/2026) — overlap persistiu, causa raiz adicional
+
+Após deploy da correção acima, o usuário reportou (novo print) que o
+overlap **persistia mesmo com os cards colapsados** (não só
+expandidos). Causa raiz adicional: `StepList` e `BranchColumn`
+(`src/components/automations/automation-builder.tsx`) usam
+`items-center` (cross-axis, não `stretch`) **sem `w-full` explícito**
+em nenhum nível da cadeia. Sem uma largura imposta, o card
+(`w-full max-w-80`/`w-full max-w-[400px]`) resolvia seu `w-full` contra
+um container pai que não estava, ele mesmo, limitado à largura real da
+coluna do grid — renderizando o card no seu tamanho **máximo**
+(320px/400px) independentemente de quão estreita a coluna realmente
+era, extravasando sobre a coluna vizinha.
+
+**Correção**: adicionado `w-full min-w-0` tanto em `StepList`
+(`flex flex-col items-center` → `flex w-full min-w-0 flex-col
+items-center`) quanto em `BranchColumn` (mesma mudança), forçando
+cada nível da árvore a herdar a largura real de seu container em vez
+de depender do comportamento implícito de dimensionamento em
+cross-axis de flexbox com `items-center`.
+
 ## Prevenção
 
 - Auditar o restante do arquivo por outros usos de

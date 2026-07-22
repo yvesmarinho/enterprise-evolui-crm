@@ -1043,7 +1043,7 @@ function StepList(props: StepListProps) {
         })()
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex w-full min-w-0 flex-col items-center">
       <AddButton onPick={(t) => props.addStepAt(parentScope, 0, t)} />
       {steps.map((step, idx) => (
         <StepRenderer
@@ -1225,7 +1225,7 @@ function BranchColumn({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-w-0 flex-col items-center">
+    <div className="flex w-full min-w-0 flex-col items-center">
       <div className={cn("mb-2 text-[11px] font-semibold uppercase", color)}>{label}</div>
       {children}
     </div>
