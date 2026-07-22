@@ -1075,12 +1075,22 @@ function StepRenderer({
   parentPath: StepPath
 } & Omit<StepListProps, "steps" | "parentPath">) {
   const t = useTranslations("Automations.builder")
-  const path: StepPath = [
-    ...parentPath,
+  // For a root-level step, parentPath already ends one level above us,
+  // so we append our own segment. For a branch-level step, parentPath's
+  // last segment is the placeholder ConditionBranches added just to let
+  // StepList derive `parentScope` (see its comment) — it carries no real
+  // index, so it must be REPLACED with our real index here, not appended
+  // to. Appending instead of replacing double-counts that segment and
+  // makes every path-walking helper (removeAt, mapAtPath, moveAt) recurse
+  // one level too deep, silently matching index 0 instead of the actual
+  // step whenever it isn't the branch's first child.
+  const path: StepPath =
     parentScope.kind === "root"
-      ? { kind: "root", index }
-      : { kind: "branch", parentCid: parentScope.parentCid, branch: parentScope.branch, index },
-  ]
+      ? [...parentPath, { kind: "root", index }]
+      : [
+          ...parentPath.slice(0, -1),
+          { kind: "branch", parentCid: parentScope.parentCid, branch: parentScope.branch, index },
+        ]
   const meta = STEP_META[step.step_type]
   const Icon = meta.icon
   const expanded = props.expandedId === step.cid
